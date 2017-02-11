@@ -4,6 +4,7 @@ from Queue import PriorityQueue
 from collections import deque
 from heapq import heappop, heappush
 
+
 boardSize = {"width": 0,"height": 0}
 @bottle.route('/static/<path:path>')
 def static(path):
@@ -37,7 +38,6 @@ def move():
     mySnake = filter(lambda x: x["name"] == "Wayne", data["snakes"])[0]
     myPos = mySnake["coords"][0]
     if (len(data["food"]) == 0):
-        print "" # detect wall other snakes
         return {
         'move': 'east',
         'taunt': 'Snake master'
@@ -51,13 +51,16 @@ def move():
         board = [[0 for x in range(boardSize["height"])] for y in range(boardSize["width"])]
         for snake in data["snakes"]:
             for coords in snake["coords"]:
-                board[coords[1]][coords[0]] = 1
-        board[myPos[0]][myPos[1]] = 1
-        path = find_path_astar(board, myPos,food["coor"])
+                board[coords[0]][coords[1]] = 1
+        board[food["coor"][0]][food["coor"][1]] = 2
+        print myPos
+        path = BFS(myPos[0],myPos[1],board)
+        #print path[len(path) - 2]
+        print len(path)
+        print nextDirection(myPos,path[len(path) - 2])
 
-        print direction(path[0])
     return {
-    'move': direction(path[0]),
+    'move': nextDirection(myPos,path[len(path) - 2]),
     'taunt': 'Snake master'
     }
 
@@ -69,6 +72,46 @@ def end():
         'taunt': 'wt---------f'
     }
 
+def nextDirection(last, next):
+    if (last[0] == next[0]):
+        if(next[1] - last[1] < 0):
+            return 'north'
+        else:
+            return 'south'
+    elif(last[1] == next[1]):
+        if(next[0] - last[0] < 0):
+            return 'west'
+        else:
+            return 'east'
+
+
+def BFS(x,y,Map):
+    Map[x][y] = 0
+    queue = deque( [(x,y,None)]) #create queue
+    while len(queue)>0: #make sure there are nodes to check left
+        node = queue.popleft() #grab the first node
+        x = node[0] #get x and y
+        y = node[1]
+        if x < 50 and x > 0 and y < 50 and y > 0:
+            if Map[x][y] == 2: #check if it's an exit
+                return GetPathFromNodes(node) #if it is then return the path
+            if (Map[x][y] != 0): #if it's not a path, we can't try this spot
+                continue
+            Map[x][y]= -1 #make this spot explored so we don't try again
+            for i in [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]: #new spots to try
+                queue.append((i[0],i[1],node))#create the new spot, with node as the parent
+    return []
+
+def GetPathFromNodes(node):
+    path = []
+    while(node != None):
+        path.append((node[0],node[1]))
+        node = node[2]
+    return path
+
+def heuristic(cell, goal):
+    return abs(cell[0] - goal[0]) + abs(cell[1] - goal[1])
+
 def direction(ini):
     if(ini == 'W'):
         return 'west'
@@ -79,49 +122,6 @@ def direction(ini):
     else:
         return 'south'
 
-def maze2graph(maze):
-    height = len(maze)
-    width = len(maze[0]) if height else 0
-    graph = {(i, j): [] for j in range(width) for i in range(height)}
-
-    for col in range(height):
-        for row in range(width):
-            if (row < height - 1):
-                if (maze[row+1][col] == 0):
-                    graph[(row, col)].append(("S", (row + 1, col)))
-                if (maze[row][col] == 0):
-                    graph[(row + 1, col)].append(("N", (row, col)))
-            if (col < width - 1 ):
-                if (maze[row][col+1] == 0):
-                    graph[(row, col)].append(("E", (row, col + 1)))
-                if (maze[row][col] == 0):
-                    graph[(row, col + 1)].append(("W", (row, col)))
-
-    return graph
-
-def heuristic(cell, goal):
-    return abs(cell[0] - goal[0]) + abs(cell[1] - goal[1])
-
-
-def find_path_astar(maze, myPos, food):
-    start, goal = (myPos[0], myPos[1]), (food[0] + 1,food[1] + 1)
-    pr_queue = []
-    heappush(pr_queue, (0 + heuristic(start, goal), 0, "", start))
-    visited = set()
-    graph = maze2graph(maze)
-    while pr_queue:
-        _, cost, path, current = heappop(pr_queue)
-        if current == goal:
-            return path
-        if current in visited:
-            continue
-        visited.add(current)
-        tmp = (current[1], current[0])
-        for direction, neighbour in graph[tmp]:
-            heappush(pr_queue, (cost + heuristic(neighbour, goal), cost + 1,
-                                path + direction, neighbour))
-
-    return "w"
 
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
