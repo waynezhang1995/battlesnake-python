@@ -35,7 +35,7 @@ def start():
 @bottle.post('/move')
 def move():
     data = bottle.request.json
-    mySnake = filter(lambda x: x["name"] == "Enemy Snake", data["snakes"])[0]
+    mySnake = filter(lambda x: x["name"] == "My Snake", data["snakes"])[0]
     myPos = mySnake["coords"][0]
     if (len(data["food"]) == 0):
         return {
@@ -63,6 +63,7 @@ def move():
         board[food["coor"][0]][food["coor"][1]] = 2
         
         #Build Wall
+
         for i in range(0, boardSize["width"]):
             board[i][0] = 1
             board[i][boardSize["height"] - 1] = 1
@@ -136,4 +137,4 @@ def heuristic(cell, goal):
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 if __name__ == '__main__':
-    bottle.run(application, host=os.getenv('IP', '127.0.0.1'), port=os.getenv('PORT', '5002'))
+    bottle.run(application, host=os.getenv('IP', '127.0.0.1'), port=os.getenv('PORT', '5001'))
