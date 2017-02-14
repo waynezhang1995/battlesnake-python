@@ -71,10 +71,10 @@ def move():
             board[0][j] = 1
             board[boardSize["width"] - 1][j] = 1
         
-        #print myPos
+        print "My position is ", myPos
         path = BFS(myPos[0],myPos[1],board)
         #print path[len(path) - 2]
-        print len(path)
+        print "Path length", len(path)
         #print nextDirection(myPos,path[len(path) - 2])
 
     return {
